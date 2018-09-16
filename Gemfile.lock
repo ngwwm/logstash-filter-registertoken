@@ -128,7 +128,7 @@ PLATFORMS
 
 DEPENDENCIES
   jwt (~> 2.1)
-  logstash-devutils
+  logstash-devutils (~> 1.3)
   logstash-filter-registertoken!
 
 BUNDLED WITH

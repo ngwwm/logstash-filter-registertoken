@@ -1,8 +1,8 @@
 # encoding: utf-8
 require "logstash/filters/base"
 require "logstash/namespace"
-#require "base64"
 require "jwt"
+#require "base64"
 
 # This example filter will replace the contents of the default
 # message field with whatever you specify in the configuration.
@@ -26,6 +26,8 @@ class LogStash::Filters::RegisterToken < LogStash::Filters::Base
   config :secret, :validate => :string, :required => true
   config :alg, :validate => :string, :default => "HS256"
 
+  #time lapsed before the token expired, default to 4 hours
+  config :lapse, :validate => :number, :default => 14400
 
   public
   def register
@@ -43,8 +45,12 @@ class LogStash::Filters::RegisterToken < LogStash::Filters::Base
       #  event.set(field, value)
       #end
 
+      #work out the token expired time
+      exp = Time.now.to_i + lapse 
+      
+      @payload.store(:exp, exp)
+
       # using the event.set API
-      #event.set("token",  Base64.urlsafe_encode64(@secret))
       event.set("token",  Base64.urlsafe_encode64(JWT.encode @payload, @secret, @alg))
 
       # correct debugging log statement for reference
