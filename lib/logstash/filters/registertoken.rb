@@ -1,8 +1,8 @@
 # encoding: utf-8
 require "logstash/filters/base"
 require "logstash/namespace"
-require "jwk"
-require "base64"
+#require "base64"
+require "jwt"
 
 # This example filter will replace the contents of the default
 # message field with whatever you specify in the configuration.
@@ -22,7 +22,7 @@ class LogStash::Filters::RegisterToken < LogStash::Filters::Base
   config_name "registertoken"
 
   # Replace the message with this value.
-  config :payload, :validate => :array, :default => "{}"
+  config :payload, :validate => :hash, :default => {}
   config :secret, :validate => :string, :required => true
   config :alg, :validate => :string, :default => "HS256"
 
@@ -35,12 +35,16 @@ class LogStash::Filters::RegisterToken < LogStash::Filters::Base
   public
   def filter(event)
 
-    if @message
+    if @payload
       # Replace the event message with our message as configured in the
       # config file.
 
+      #@payload.each do |field, value|
+      #  event.set(field, value)
+      #end
+
       # using the event.set API
-      #event.set("message", @message)
+      #event.set("token",  Base64.urlsafe_encode64(@secret))
       event.set("token",  Base64.urlsafe_encode64(JWT.encode @payload, @secret, @alg))
 
       # correct debugging log statement for reference
