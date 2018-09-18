@@ -2,26 +2,29 @@
 require "logstash/filters/base"
 require "logstash/namespace"
 require "jwt"
-#require "base64"
 
-# This example filter will replace the contents of the default
-# message field with whatever you specify in the configuration.
+# This filter is created base on the example from github. It will
+# generate a json web token from the given payload and base64 coded
+# it. The enocded token will be add the the event 'token' field.
 #
-# It is only intended to be used as an example.
 class LogStash::Filters::RegisterToken < LogStash::Filters::Base
 
   # Setting the config_name here is required. This is how you
   # configure this filter from your Logstash config.
   #
   # filter {
-  #   example {
-  #     message => "My message..."
+  #   registertoken {
+  #     "field1" => "value1"
+  #     "field2" => "value2"
+  #     ...
   #   }
+  #   secret => "mysecret"
+  #   alg => "HS256"
   # }
   #
   config_name "registertoken"
 
-  # Replace the message with this value.
+  # Parameters
   config :payload, :validate => :hash, :default => {}
   config :secret, :validate => :string, :required => true
   config :alg, :validate => :string, :default => "HS256"
@@ -38,20 +41,26 @@ class LogStash::Filters::RegisterToken < LogStash::Filters::Base
   def filter(event)
 
     if @payload
-      # Replace the event message with our message as configured in the
-      # config file.
+      # Generate JWT from the payload and base64 encoded it.
 
-      #@payload.each do |field, value|
-      #  event.set(field, value)
-      #end
-
+      # Read all fields passed in and put it in a new hash
+      @payload.each do |field, value|
+        @logger.debug? && @logger.debug("payload: ", :field => event.sprintf(field), :value => event.sprintf(value) )
+        payload.store(event.sprintf(field), event.sprintf(value)) 
+      end
+      
       #work out the token expired time
       exp = Time.now.to_i + lapse 
       
-      @payload.store(:exp, exp)
+      payload.store("exp", exp)
+      
+      @logger.debug? && @logger.debug("payload: ", :payload => payload)
+      
+      #payload = LogStash::Json.load(event.sprintf(@payload))
+      #payload = event.sprintf(@payload).to_json
 
       # using the event.set API
-      event.set("token",  Base64.urlsafe_encode64(JWT.encode @payload, @secret, @alg))
+      event.set("token",  Base64.urlsafe_encode64(JWT.encode payload, @secret, @alg))
 
       # correct debugging log statement for reference
       # using the event.get API
